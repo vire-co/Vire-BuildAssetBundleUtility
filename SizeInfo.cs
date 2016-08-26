@@ -4,53 +4,55 @@ using System.Collections;
 
 namespace Vire
 {
-	public class SizeInfo : EditorWindow
-	{
-		// Add menu item named "Size Info" to the Window menu
-		[MenuItem("Window/Size Info")]
-		public static void ShowWindow()
-		{
-			//Show existing window instance. If one doesn't exist, make one.
-			EditorWindow editor = EditorWindow.GetWindow(typeof(SizeInfo));
+    public class SizeInfo : EditorWindow
+    {
+        // Add menu item named "Size Info" to the Window menu
+        [MenuItem("Window/Size Info")]
+        public static void ShowWindow()
+        {
+            //Show existing window instance. If one doesn't exist, make one.
+            EditorWindow editor = EditorWindow.GetWindow(typeof(SizeInfo));
             editor.titleContent.text = "Size Info";
-		}
+        }
 
-		void OnGUI()
-		{
-			// see http://forum.unity3d.com/threads/object-size.19991/
-			GameObject thisObject = (GameObject)Selection.activeObject;
-			if (!thisObject)
-			{
-				return;
-			}
+        public Bounds getBounds(GameObject gameObject)
+        {
+            Bounds objectsBounds = new Bounds(gameObject.transform.position, Vector3.zero);
 
-			MeshFilter mf = thisObject.GetComponent<MeshFilter>();
-			if (!mf)
-			{
-				return;
-			}
+            Renderer renderer = gameObject.GetComponent<Renderer>();
+            if (renderer)
+                objectsBounds.Encapsulate(renderer.bounds);
 
-			Mesh mesh = mf.sharedMesh;
-			if (!mesh)
-			{
-				return;
-			}
+            Renderer[] renderers = gameObject.GetComponentsInChildren<Renderer>();
+            foreach (Renderer render in renderers)
+                objectsBounds.Encapsulate(render.bounds);
 
-			Vector3 size = mesh.bounds.size;
-			Matrix4x4 matrix = thisObject.transform.localToWorldMatrix;
+            return objectsBounds;
+        }
 
-			float scaleX = matrix.m00;
-			float scaleY = matrix.m11;
-			float scaleZ = matrix.m22;
+        void OnGUI()
+        {
+            if (Selection.activeObject != null && Selection.activeObject.GetType() == typeof(GameObject))
+            {
+                GameObject thisObject = (GameObject)Selection.activeObject;
+                if (!thisObject)
+                {
+                    return;
+                }
 
-			EditorGUILayout.LabelField ("x", "" + size.x * scaleX);
-			EditorGUILayout.LabelField ("y", "" + size.y * scaleY);
-			EditorGUILayout.LabelField ("z", "" + size.z * scaleZ);
-		}
+                Bounds objectBounds = getBounds(thisObject);
+                Vector3 size = objectBounds.size;
 
-		void OnInspectorUpdate()
-		{
-			Repaint();
-		}
-	}
+                string numberFormat = "0.000";
+                EditorGUILayout.LabelField("x", "" + size.x.ToString(numberFormat));
+                EditorGUILayout.LabelField("y", "" + size.y.ToString(numberFormat));
+                EditorGUILayout.LabelField("z", "" + size.z.ToString(numberFormat));
+            }
+        }
+
+        void OnInspectorUpdate()
+        {
+            Repaint();
+        }
+    }
 }
